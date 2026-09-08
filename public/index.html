@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>AIConsult — Assistant de consultation</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230f766e%27/%3E%3Cpath d=%27M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">✚</span>
+      <div>
+        <h1>AIConsult</h1>
+        <p class="tagline">Enregistrement, transcription et compte rendu structuré de consultation</p>
+      </div>
+    </div>
+    <div class="status" id="status" aria-live="polite">Connexion au serveur…</div>
+  </header>
+
+  <p class="privacy-banner">
+    <strong>Confidentialité.</strong> Ne citez ni nom, ni prénom, ni date de naissance complète, ni adresse pendant l'enregistrement.
+    La transcription est envoyée à l'API Claude pour la rédaction ; rien n'est conservé sur le serveur.
+    Un brouillon est gardé dans ce navigateur uniquement, jusqu'à ce que vous l'effaciez.
+  </p>
+
+  <main class="layout">
+    <!-- ───────── Colonne gauche : capture ───────── -->
+    <div class="column">
+      <section class="card" id="capture">
+        <h2>1. Enregistrement de la consultation</h2>
+
+        <div class="recorder">
+          <div class="rec-controls">
+            <button id="btn-start" class="btn btn-primary" type="button">● Démarrer</button>
+            <button id="btn-pause" class="btn" type="button" disabled>‖ Pause</button>
+            <button id="btn-stop" class="btn btn-danger" type="button" disabled>■ Arrêter</button>
+            <span id="rec-timer" class="timer" aria-live="off">00:00</span>
+            <span id="rec-indicator" class="rec-indicator" hidden><span class="dot"></span>Enregistrement</span>
+          </div>
+          <p id="rec-support" class="hint"></p>
+          <p id="interim" class="interim" aria-live="polite"></p>
+        </div>
+
+        <div id="audio-panel" class="audio-panel" hidden>
+          <audio id="audio-player" controls></audio>
+          <div class="row wrap">
+            <a id="audio-download" class="btn btn-small" download="consultation.webm">Télécharger l'audio</a>
+            <button id="btn-transcribe-server" class="btn btn-small" type="button" hidden>Transcrire l'audio (serveur)</button>
+          </div>
+        </div>
+
+        <details class="import">
+          <summary>Importer un fichier audio existant</summary>
+          <p class="hint">Le fichier est transcrit par le serveur (si la transcription serveur est configurée), sinon utilisez la dictée ci-dessus ou collez une transcription.</p>
+          <input id="audio-file" type="file" accept="audio/*,video/webm">
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>2. Transcription</h2>
+        <p class="hint">Relisez et corrigez librement. Vous pouvez aussi coller ici une transcription obtenue autrement.</p>
+        <textarea id="transcript" rows="12" placeholder="La transcription apparaît ici pendant l'enregistrement…" spellcheck="true"></textarea>
+        <div class="row space-between">
+          <span id="transcript-count" class="hint">0 mot</span>
+          <button id="btn-clear-transcript" class="btn btn-small btn-ghost" type="button">Effacer la transcription</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>3. Notes complémentaires</h2>
+        <p class="hint">Éléments non dictés ou à préciser : constantes, mesures, lecture de l'ECG, prescriptions exactes…</p>
+        <textarea id="notes" rows="5" placeholder="Ex. TA 128/78, FC 62/min, poids 74 kg. ECG : rythme sinusal, PR 160 ms, QRS fins, repolarisation normale."></textarea>
+        <label class="field">
+          <span>Contexte (facultatif)</span>
+          <input id="contexte" type="text" placeholder="Ex. Consultation de médecine du sport, visite de non contre-indication">
+        </label>
+        <div class="row">
+          <button id="btn-generate" class="btn btn-primary btn-large" type="button">Générer le compte rendu</button>
+          <span id="generate-status" class="hint" aria-live="polite"></span>
+        </div>
+        <p id="generate-error" class="error" role="alert" hidden></p>
+      </section>
+    </div>
+
+    <!-- ───────── Colonne droite : compte rendu ───────── -->
+    <div class="column">
+      <section class="card report-card" id="report-card">
+        <div class="row space-between wrap">
+          <h2>4. Compte rendu de consultation</h2>
+          <div class="row wrap toolbar" id="report-toolbar" hidden>
+            <button id="btn-copy" class="btn btn-small" type="button">Copier</button>
+            <button id="btn-download" class="btn btn-small" type="button">Télécharger (.md)</button>
+            <button id="btn-print" class="btn btn-small" type="button">Imprimer</button>
+          </div>
+        </div>
+        <p id="report-empty" class="empty">Le compte rendu structuré s'affichera ici. Chaque rubrique restera modifiable avant copie, téléchargement ou impression.</p>
+        <div id="report" class="report" hidden></div>
+        <p id="report-meta" class="hint" hidden></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <button id="btn-new" class="btn btn-ghost" type="button">Nouvelle consultation (efface tout)</button>
+    <span class="hint" id="draft-info"></span>
+  </footer>
+
+  <!-- Vérification des données identifiantes avant envoi -->
+  <dialog id="privacy-dialog">
+    <form method="dialog">
+      <h3>Données potentiellement identifiantes</h3>
+      <p>Les passages suivants ressemblent à des données personnelles. Vérifiez-les avant d'envoyer la transcription.</p>
+      <ul id="privacy-list"></ul>
+      <div class="row end">
+        <button class="btn" value="cancel" type="submit">Modifier d'abord</button>
+        <button class="btn btn-primary" value="send" type="submit">Envoyer quand même</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Vue d'impression, remplie au moment d'imprimer -->
+  <div id="print-view" class="print-view" aria-hidden="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
