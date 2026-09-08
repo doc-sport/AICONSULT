@@ -1,0 +1,40 @@
+{
+  "name": "aiconsult",
+  "version": "1.0.0",
+  "description": "Assistant de consultation médicale : enregistrement, transcription et compte rendu structuré",
+  "main": "src/server.ts",
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doc-sport/AICONSULT.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/doc-sport/AICONSULT/issues"
+  },
+  "homepage": "https://github.com/doc-sport/AICONSULT#readme",
+  "type": "module",
+  "private": "true",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.3.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.5.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
